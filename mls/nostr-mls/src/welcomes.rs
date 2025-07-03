@@ -261,11 +261,13 @@ where
     ) -> Result<(StagedWelcome, NostrGroupDataExtension), Error> {
         // Parse welcome message
         let welcome_message_in = MlsMessageIn::tls_deserialize(&mut welcome_message)?;
+        tracing::info!("TLS deserialization successful");
 
         let welcome: Welcome = match welcome_message_in.extract() {
             MlsMessageBodyIn::Welcome(welcome) => welcome,
             _ => return Err(Error::InvalidWelcomeMessage),
         };
+        tracing::info!("Valid Welcome message");
 
         let mls_group_config = MlsGroupJoinConfig::builder()
             .use_ratchet_tree_extension(true)
@@ -273,9 +275,11 @@ where
 
         let staged_welcome =
             StagedWelcome::new_from_welcome(&self.provider, &mls_group_config, welcome, None)?;
+        tracing::info!("valid staged welcome");
 
         let nostr_group_data =
             NostrGroupDataExtension::from_group_context(staged_welcome.group_context())?;
+        tracing::info!("Group data received");
 
         Ok((staged_welcome, nostr_group_data))
     }
