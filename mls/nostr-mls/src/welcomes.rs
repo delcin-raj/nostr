@@ -268,6 +268,7 @@ where
             _ => return Err(Error::InvalidWelcomeMessage),
         };
         tracing::info!("Valid Welcome message {welcome:?}");
+        tracing::info!("{}", welcome.secrets().len());
 
         let mls_group_config = MlsGroupJoinConfig::builder()
             .use_ratchet_tree_extension(true)
