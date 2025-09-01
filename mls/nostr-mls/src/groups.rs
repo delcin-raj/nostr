@@ -639,7 +639,7 @@ where
         &self,
         mls_group: &mut MlsGroup,
         group_id: &GroupId,
-        group_data: &NostrGroupDataExtension,
+        group_data: NostrGroupDataExtension,
     ) -> Result<UpdateGroupResult, Error> {
         // Check if current user is an admin
         let own_leaf = mls_group.own_leaf().ok_or(Error::OwnLeafNotFound)?;
@@ -649,7 +649,7 @@ where
             ));
         }
 
-        let extension = Self::get_unknown_extension_from_group_data(group_data)?;
+        let extension = Self::get_unknown_extension_from_group_data(&group_data)?;
         let mut extensions = mls_group.extensions().clone();
         extensions.add_or_replace(extension);
 
@@ -676,6 +676,20 @@ where
         self.storage()
             .save_processed_message(processed_message)
             .map_err(|e| Error::Message(e.to_string()))?;
+
+        // Update the nostr-mls groups table entry
+        let mut group =
+            self.storage()
+                .find_group_by_mls_group_id(group_id)?
+                .ok_or(Error::NostrGroup(format!(
+                    "Entry not found in groups table for id {group_id:?}"
+                )))?;
+        group.name = group_data.name;
+        group.description = group_data.description;
+        group.image_hash = group_data.image_hash;
+        group.image_key = group_data.image_key;
+        group.image_nonce = group_data.image_nonce;
+        self.storage().save_group(group)?;
 
         Ok(UpdateGroupResult {
             evolution_event: commit_event,
@@ -753,7 +767,7 @@ where
             group_data.admins = admins.into_iter().collect();
         }
 
-        self.update_group_data_extension(&mut mls_group, group_id, &group_data)
+        self.update_group_data_extension(&mut mls_group, group_id, group_data)
     }
 
     /// Retrieves the set of relay URLs associated with an MLS group
